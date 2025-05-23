@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/call_log.dart';
 import '../services/call_log_service.dart';
+import '../services/api_service.dart';
 import 'device_info_screen.dart';
 
 class CallLogsScreen extends StatefulWidget {
@@ -13,6 +14,7 @@ class CallLogsScreen extends StatefulWidget {
 class _CallLogsScreenState extends State<CallLogsScreen> {
   List<CallLog> _callLogs = [];
   bool _isLoading = true;
+  bool _isSyncing = false;
   String? _error;
 
   @override
@@ -41,6 +43,94 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
     }
   }
 
+  Future<void> _syncCallLogs() async {
+    try {
+      setState(() {
+        _isSyncing = true;
+        _error = null;
+      });
+
+      final result = await ApiService.syncCallLogs(_callLogs);
+      
+      if (mounted) {
+        if (result['success']) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['message']),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
+          // Show error dialog with detailed information
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Sync Status'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      result['message'],
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                    if (result['syncedCount'] > 0) ...[
+                      const SizedBox(height: 8),
+                      Text('Successfully synced: ${result['syncedCount']} calls'),
+                    ],
+                    if (result['failedCount'] > 0) ...[
+                      const SizedBox(height: 8),
+                      Text('Failed to sync: ${result['failedCount']} calls'),
+                    ],
+                    if (result['errors'] != null) ...[
+                      const SizedBox(height: 8),
+                      const Text('Error details:'),
+                      const SizedBox(height: 4),
+                      ...result['errors'].map((error) => Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text('• $error'),
+                      )),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Sync Error'),
+            content: Text(e.toString()),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSyncing = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -57,6 +147,19 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
                 ),
               );
             },
+          ),
+          IconButton(
+            icon: _isSyncing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.sync),
+            onPressed: _isSyncing ? null : _syncCallLogs,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -106,7 +209,11 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
                             children: [
                               Text(log.phoneNumber),
                               Text(
-                                '${log.formattedDate} at ${log.formattedTime}',
+                                '${log.formattedDate}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              Text(
+                                'Start: ${log.formattedStartTime} - End: ${log.formattedEndTime}',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -140,7 +247,9 @@ class _CallLogsScreenState extends State<CallLogsScreen> {
                                     const SizedBox(height: 8),
                                     Text('Date: ${log.formattedDate}'),
                                     const SizedBox(height: 8),
-                                    Text('Time: ${log.formattedTime}'),
+                                    Text('Start Time: ${log.formattedStartTime}'),
+                                    const SizedBox(height: 8),
+                                    Text('End Time: ${log.formattedEndTime}'),
                                     const SizedBox(height: 8),
                                     Text('Duration: ${log.formattedDuration}'),
                                     const SizedBox(height: 8),

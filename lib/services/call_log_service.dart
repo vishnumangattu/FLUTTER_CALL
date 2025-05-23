@@ -12,11 +12,15 @@ class CallLogService {
 
     final callLogs = await CallLog.get();
     return callLogs.map((log) {
+      final startTime = DateTime.fromMillisecondsSinceEpoch(log.timestamp ?? 0);
+      final duration = Duration(seconds: log.duration ?? 0);
+      final endTime = startTime.add(duration);
+      
       return app.CallLog(
         contactName: log.name ?? 'Unknown',
         phoneNumber: log.number ?? 'Unknown',
-        timestamp: DateTime.fromMillisecondsSinceEpoch(log.timestamp ?? 0),
-        duration: Duration(seconds: log.duration ?? 0),
+        startTime: startTime,
+        endTime: endTime,
         type: _getCallType(log.callType),
       );
     }).toList();

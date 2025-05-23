@@ -10,24 +10,30 @@ enum CallType {
 class CallLog {
   final String contactName;
   final String phoneNumber;
-  final DateTime timestamp;
-  final Duration duration;
+  final DateTime startTime;
+  final DateTime endTime;
   final CallType type;
 
   CallLog({
     required this.contactName,
     required this.phoneNumber,
-    required this.timestamp,
-    required this.duration,
+    required this.startTime,
+    required this.endTime,
     required this.type,
   });
 
-  String get formattedTime {
-    return DateFormat('h:mm a').format(timestamp);
+  Duration get duration => endTime.difference(startTime);
+
+  String get formattedStartTime {
+    return DateFormat('h:mm a').format(startTime);
+  }
+
+  String get formattedEndTime {
+    return DateFormat('h:mm a').format(endTime);
   }
 
   String get formattedDate {
-    return DateFormat('MMM d, y').format(timestamp);
+    return DateFormat('MMM d, y').format(startTime);
   }
 
   String get formattedDuration {
