@@ -7,7 +7,7 @@ import 'device_info_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://172.16.99.244:5001/api/leads';
+  static const String baseUrl = 'http://172.16.99.244:5000/api/leads';
   static const String agentIdKey = 'agent_id';
   static const String syncedLogsKey = 'synced_call_logs';
 
